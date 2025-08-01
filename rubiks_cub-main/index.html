@@ -301,6 +301,27 @@
         box-shadow: none;
       }
       
+      .btn-level5 {
+        background: linear-gradient(45deg, #e74c3c, #c0392b);
+        border: none;
+        color: white;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+      }
+      
+      .btn-level5:hover {
+        background: linear-gradient(45deg, #c0392b, #a93226);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      }
+      
+      .btn-level5:disabled {
+        background: #6c757d;
+        transform: none;
+        box-shadow: none;
+      }
+      
       /* Done button styling */
       .btn-done {
         background: linear-gradient(45deg, #28a745, #20c997);
@@ -346,6 +367,7 @@
       <button class="btn btn-level2" id="level2-button" onclick="scrambleCubeLevel2()" data-toggle="tooltip" data-placement="right" title="Level 2 - 4 moves">Level 2 - Scramble</button>
       <button class="btn btn-level3" id="level3-button" onclick="scrambleCubeLevel3()" data-toggle="tooltip" data-placement="right" title="Level 3 - 5 moves">Level 3 - Scramble</button>
       <button class="btn btn-level4" id="level4-button" onclick="scrambleCubeLevel4()" data-toggle="tooltip" data-placement="right" title="Level 4 - 7 moves">Level 4 - Scramble</button>
+      <button class="btn btn-level5" id="level5-button" onclick="scrambleCubeLevel5()" data-toggle="tooltip" data-placement="right" title="Level 5 - 10 moves">Level 5 - Scramble</button>
       <button class="btn btn-done" id="done-button" onclick="checkIfSolved()" data-toggle="tooltip" data-placement="right" title="Check if solved">Done</button>
       <button class="btn btn-info" id="reset-button" onclick="resetState()" data-toggle="tooltip" data-placement="right" title="Start over">Reset</button>
     </div>
@@ -462,6 +484,16 @@
             nextLevelText: "Proceed to Level 5",
             nextLevel: 5,
             rewardType: "fuselage"
+        },
+        5: {
+            moves: 10,
+            title: "Level 5: Pro Challenge",
+            successMessage: "🎉 Congratulations! You've successfully completed Level 5!",
+            rewardTitle: "🎉 Level 5 Complete!",
+            rewardText: "🏆 Master Pilot Certificate Unlocked!",
+            nextLevelText: "Proceed to Level 6",
+            nextLevel: 6,
+            rewardType: "master_pilot"
         }
     };
 
@@ -627,6 +659,8 @@
                 showLandingGearAnimation();
             } else if (config.rewardType === "fuselage") {
                 showFuselageAnimation();
+            } else if (config.rewardType === "master_pilot") {
+                showMasterPilotAnimation();
             }
         }
         
@@ -700,6 +734,21 @@
         fuselageCanvas.style.display = "block";
         
         initFuselageAnimation();
+    }
+
+    // Show master pilot animation
+    function showMasterPilotAnimation() {
+        const engineCanvas = document.getElementById("engineCanvas");
+        const cockpitCanvas = document.getElementById("cockpitCanvas");
+        const wingCanvas = document.getElementById("wingCanvas");
+        const fuselageCanvas = document.getElementById("fuselageCanvas");
+        
+        engineCanvas.style.display = "none";
+        cockpitCanvas.style.display = "none";
+        wingCanvas.style.display = "none";
+        fuselageCanvas.style.display = "none";
+        
+        initMasterPilotAnimation();
     }
 
     // Initialize 3D engine animation
@@ -1386,6 +1435,8 @@
             scrambleCubeLevel3();
         } else if (level === 4) {
             scrambleCubeLevel4();
+        } else if (level === 5) {
+            scrambleCubeLevel5();
         }
     }
 
@@ -1407,6 +1458,7 @@
             "level2-button",
             "level3-button",
             "level4-button",
+            "level5-button",
             "reset-button",
             "done-button",
             "clockwise-icon",
@@ -1433,6 +1485,7 @@
         document.getElementById("level2-button").disabled = true;
         document.getElementById("level3-button").disabled = true;
         document.getElementById("level4-button").disabled = true;
+        document.getElementById("level5-button").disabled = true;
         document.getElementById("reset-button").disabled = true;
         document.getElementById("done-button").disabled = true;
         
@@ -1583,6 +1636,35 @@
         console.log("Level 4 cube scramble completed!");
     }
 
+    // Level 5 scramble function
+    async function scrambleCubeLevel5() {
+        console.log("Level 5 scramble function called!");
+        
+        // Prevent scrambling if already in progress
+        if (isScrambling) {
+            console.log("Level 5 scrambling blocked: already in progress");
+            return;
+        }
+        
+        console.log("Starting Level 5 cube scramble...");
+        
+        currentLevel = 5;
+        isSolved = false;
+        rewardUnlocked = false;
+        
+        // Store the solved state for comparison
+        solvedStateLevel5 = getCurrentCubeState();
+        
+        // Generate scramble sequence (10 moves)
+        const scrambleSequence = generateScrambleSequence(5);
+        console.log("Level 5 scramble sequence:", scrambleSequence.join(' '));
+        
+        // Apply the sequence
+        await applyScrambleSequence(scrambleSequence);
+        
+        console.log("Level 5 cube scramble completed!");
+    }
+
     // Original scramble function (for regular scrambling)
     async function scrambleCube() {
         console.log("scrambleCube function called!");
@@ -1639,7 +1721,7 @@
 
     // Helper function to compare cube states
     function isCubeSolvedByState(currentState, solvedState) {
-        // For Level 4, we'll use the existing solve detection logic
+        // For Level 5, we'll use the existing solve detection logic
         // In a real implementation, this would compare the actual cube face states
         return checkIfSolvedSimple();
     }
@@ -1650,12 +1732,19 @@
         return isCubeSolvedByState(currentState, solvedStateLevel4);
     }
 
+    // Level-specific solve detection for Level 5
+    function checkIfSolvedLevel5() {
+        const currentState = getCurrentCubeState();
+        return isCubeSolvedByState(currentState, solvedStateLevel5);
+    }
+
     // Make functions available globally
     window.scrambleCube = scrambleCube;
     window.scrambleCubeLevel1 = scrambleCubeLevel1;
     window.scrambleCubeLevel2 = scrambleCubeLevel2;
     window.scrambleCubeLevel3 = scrambleCubeLevel3;
     window.scrambleCubeLevel4 = scrambleCubeLevel4;
+    window.scrambleCubeLevel5 = scrambleCubeLevel5;
     window.checkIfSolved = checkIfSolved;
     window.collectReward = collectReward;
     window.proceedToNextLevel = proceedToNextLevel;
@@ -1672,6 +1761,7 @@
     console.log("- window.scrambleCubeLevel2:", typeof window.scrambleCubeLevel2);
     console.log("- window.scrambleCubeLevel3:", typeof window.scrambleCubeLevel3);
     console.log("- window.scrambleCubeLevel4:", typeof window.scrambleCubeLevel4);
+    console.log("- window.scrambleCubeLevel5:", typeof window.scrambleCubeLevel5);
     </script>
   </body>
 </html>
