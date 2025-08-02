@@ -5,6 +5,16 @@
     <title>Rubik's Cube</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Force background change -->
+    <style>
+        html, body {
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 25%, #2d3a5f 50%, #1e3a8a 75%, #0f172a 100%) !important;
+            background-attachment: fixed !important;
+            min-height: 100vh !important;
+        }
+    </style>
+    
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
       
@@ -363,13 +373,27 @@
       </button>
       <button class="btn btn-success" id="solve-button" onclick="handleSolve()" data-toggle="tooltip" data-placement="right" title="Solve the cube">Solve</button>
       <button class="btn btn-warning" id="scramble-button" onclick="scrambleCube()" data-toggle="tooltip" data-placement="right" title="Scramble the cube">Scramble</button>
+      <button class="btn btn-done" id="done-button" onclick="checkIfSolved()" data-toggle="tooltip" data-placement="right" title="Check if solved">Done</button>
+      <button class="btn btn-info" id="reset-button" onclick="resetState()" data-toggle="tooltip" data-placement="right" title="Start over">Reset</button>
+    </div>
+    
+    <!-- New vertical level buttons container -->
+    <div id="level-button-group">
       <button class="btn btn-level1" id="level1-button" onclick="scrambleCubeLevel1()" data-toggle="tooltip" data-placement="right" title="Level 1 - 3 moves">Level 1 - Scramble</button>
       <button class="btn btn-level2" id="level2-button" onclick="scrambleCubeLevel2()" data-toggle="tooltip" data-placement="right" title="Level 2 - 4 moves">Level 2 - Scramble</button>
       <button class="btn btn-level3" id="level3-button" onclick="scrambleCubeLevel3()" data-toggle="tooltip" data-placement="right" title="Level 3 - 5 moves">Level 3 - Scramble</button>
       <button class="btn btn-level4" id="level4-button" onclick="scrambleCubeLevel4()" data-toggle="tooltip" data-placement="right" title="Level 4 - 7 moves">Level 4 - Scramble</button>
       <button class="btn btn-level5" id="level5-button" onclick="scrambleCubeLevel5()" data-toggle="tooltip" data-placement="right" title="Level 5 - 10 moves">Level 5 - Scramble</button>
-      <button class="btn btn-done" id="done-button" onclick="checkIfSolved()" data-toggle="tooltip" data-placement="right" title="Check if solved">Done</button>
-      <button class="btn btn-info" id="reset-button" onclick="resetState()" data-toggle="tooltip" data-placement="right" title="Start over">Reset</button>
+    </div>
+    
+    <!-- Cheat Code Section -->
+    <div id="cheat-container">
+      <h3>🔓 Cheat Code</h3>
+      <div class="cheat-input-group">
+        <input type="text" id="cheat-input" placeholder="Enter cheat code..." maxlength="10" class="cheat-input">
+        <button class="btn btn-cheat" id="cheat-button" onclick="activateCheatCode()" data-toggle="tooltip" data-placement="right" title="Activate cheat code">Activate</button>
+      </div>
+      <div id="cheat-message" class="cheat-message"></div>
     </div>
     <div id="action-display"></div>
     <div id="solution-display"></div>
@@ -435,6 +459,18 @@
     let currentLevel = 0; // 0 = no level, 1 = level 1, 2 = level 2, etc.
     let isSolved = false;
     let rewardUnlocked = false;
+    
+    // Cheat code variables
+    const CHEAT_CODE_LEVEL1 = "COLLINS1";
+    const CHEAT_CODE_LEVEL2 = "COLLINS2";
+    const CHEAT_CODE_LEVEL3 = "COLLINS3";
+    const CHEAT_CODE_LEVEL4 = "COLLINS4";
+    const CHEAT_CODE_LEVEL5 = "COLLINS5";
+    let cheatCodeUsedLevel1 = false;
+    let cheatCodeUsedLevel2 = false;
+    let cheatCodeUsedLevel3 = false;
+    let cheatCodeUsedLevel4 = false;
+    let cheatCodeUsedLevel5 = false;
     
     // Animation variables
     let engineScene, engineCamera, engineRenderer, engineTurbine, engineBody;
@@ -1737,6 +1773,252 @@
         const currentState = getCurrentCubeState();
         return isCubeSolvedByState(currentState, solvedStateLevel5);
     }
+
+    // NEW: Updated Cheat Code Functions
+    function activateCheatCode() {
+        const cheatInput = document.getElementById('cheat-input');
+        const cheatMessage = document.getElementById('cheat-message');
+        const enteredCode = cheatInput.value.trim().toUpperCase();
+        
+        // Clear previous message
+        cheatMessage.textContent = '';
+        cheatMessage.className = 'cheat-message';
+        
+        if (!enteredCode) {
+            showCheatMessage('Please enter a cheat code!', 'error');
+            return;
+        }
+        
+        if (enteredCode === CHEAT_CODE_LEVEL1) {
+            if (cheatCodeUsedLevel1) {
+                showCheatMessage('Cheat code already used for Level 1!', 'error');
+                return;
+            }
+            
+            // Activate Level 1 cheat
+            cheatCodeUsedLevel1 = true;
+            showCheatMessage('🎉 Cheat code activated! Level 1 completed!', 'success');
+            
+            // Clear input
+            cheatInput.value = '';
+            
+            // Trigger Level 1 success flow
+            setTimeout(() => {
+                triggerLevel1Success();
+            }, 1500);
+            
+        } else if (enteredCode === CHEAT_CODE_LEVEL2) {
+            if (cheatCodeUsedLevel2) {
+                showCheatMessage('Cheat code already used for Level 2!', 'error');
+                return;
+            }
+            
+            // Activate Level 2 cheat
+            cheatCodeUsedLevel2 = true;
+            showCheatMessage('🎉 Cheat code activated! Level 2 completed!', 'success');
+            
+            // Clear input
+            cheatInput.value = '';
+            
+            // Trigger Level 2 success flow
+            setTimeout(() => {
+                triggerLevel2Success();
+            }, 1500);
+            
+        } else if (enteredCode === CHEAT_CODE_LEVEL3) {
+            if (cheatCodeUsedLevel3) {
+                showCheatMessage('Cheat code already used for Level 3!', 'error');
+                return;
+            }
+            
+            // Activate Level 3 cheat
+            cheatCodeUsedLevel3 = true;
+            showCheatMessage('🎉 Cheat code activated! Level 3 completed!', 'success');
+            
+            // Clear input
+            cheatInput.value = '';
+            
+            // Trigger Level 3 success flow
+            setTimeout(() => {
+                triggerLevel3Success();
+            }, 1500);
+            
+        } else if (enteredCode === CHEAT_CODE_LEVEL4) {
+            if (cheatCodeUsedLevel4) {
+                showCheatMessage('Cheat code already used for Level 4!', 'error');
+                return;
+            }
+            
+            // Activate Level 4 cheat
+            cheatCodeUsedLevel4 = true;
+            showCheatMessage('🎉 Cheat code activated! Level 4 completed!', 'success');
+            
+            // Clear input
+            cheatInput.value = '';
+            
+            // Trigger Level 4 success flow
+            setTimeout(() => {
+                triggerLevel4Success();
+            }, 1500);
+            
+        } else if (enteredCode === CHEAT_CODE_LEVEL5) {
+            if (cheatCodeUsedLevel5) {
+                showCheatMessage('Cheat code already used for Level 5!', 'error');
+                return;
+            }
+            
+            // Activate Level 5 cheat
+            cheatCodeUsedLevel5 = true;
+            showCheatMessage('🎉 Cheat code activated! Level 5 completed!', 'success');
+            
+            // Clear input
+            cheatInput.value = '';
+            
+            // Trigger Level 5 success flow
+            setTimeout(() => {
+                triggerLevel5Success();
+            }, 1500);
+            
+        } else {
+            showCheatMessage('❌ Invalid cheat code!', 'error');
+        }
+    }
+    
+    function showCheatMessage(message, type) {
+        const cheatMessage = document.getElementById('cheat-message');
+        cheatMessage.textContent = message;
+        cheatMessage.className = `cheat-message ${type}`;
+        
+        // Auto-clear success messages after 3 seconds
+        if (type === 'success') {
+            setTimeout(() => {
+                cheatMessage.textContent = '';
+                cheatMessage.className = 'cheat-message';
+            }, 3000);
+        }
+    }
+    
+    function triggerLevel1Success() {
+        // Set current level to 1
+        currentLevel = 1;
+        
+        // Show success modal
+        const successModal = document.getElementById('successModal');
+        const successTitle = document.getElementById('successTitle');
+        const successMessage = document.getElementById('successMessage');
+        
+        successTitle.textContent = '🎉 Congratulations!';
+        successMessage.textContent = 'You\'ve successfully completed Level 1 using the cheat code!';
+        
+        successModal.style.display = 'flex';
+        
+        // Disable Level 1 button since it's completed
+        const level1Button = document.getElementById('level1-button');
+        if (level1Button) {
+            level1Button.disabled = true;
+            level1Button.textContent = 'Level 1 - Completed ✓';
+        }
+    }
+    
+    function triggerLevel2Success() {
+        // Set current level to 2
+        currentLevel = 2;
+        
+        // Show success modal
+        const successModal = document.getElementById('successModal');
+        const successTitle = document.getElementById('successTitle');
+        const successMessage = document.getElementById('successMessage');
+        
+        successTitle.textContent = '🎉 Congratulations!';
+        successMessage.textContent = 'You\'ve successfully completed Level 2 using the cheat code!';
+        
+        successModal.style.display = 'flex';
+        
+        // Disable Level 2 button since it's completed
+        const level2Button = document.getElementById('level2-button');
+        if (level2Button) {
+            level2Button.disabled = true;
+            level2Button.textContent = 'Level 2 - Completed ✓';
+        }
+    }
+    
+    function triggerLevel3Success() {
+        // Set current level to 3
+        currentLevel = 3;
+        
+        // Show success modal
+        const successModal = document.getElementById('successModal');
+        const successTitle = document.getElementById('successTitle');
+        const successMessage = document.getElementById('successMessage');
+        
+        successTitle.textContent = '🎉 Congratulations!';
+        successMessage.textContent = 'You\'ve successfully completed Level 3 using the cheat code!';
+        
+        successModal.style.display = 'flex';
+        
+        // Disable Level 3 button since it's completed
+        const level3Button = document.getElementById('level3-button');
+        if (level3Button) {
+            level3Button.disabled = true;
+            level3Button.textContent = 'Level 3 - Completed ✓';
+        }
+    }
+    
+    function triggerLevel4Success() {
+        // Set current level to 4
+        currentLevel = 4;
+        
+        // Show success modal
+        const successModal = document.getElementById('successModal');
+        const successTitle = document.getElementById('successTitle');
+        const successMessage = document.getElementById('successMessage');
+        
+        successTitle.textContent = '🎉 Congratulations!';
+        successMessage.textContent = 'You\'ve successfully completed Level 4 using the cheat code!';
+        
+        successModal.style.display = 'flex';
+        
+        // Disable Level 4 button since it's completed
+        const level4Button = document.getElementById('level4-button');
+        if (level4Button) {
+            level4Button.disabled = true;
+            level4Button.textContent = 'Level 4 - Completed ✓';
+        }
+    }
+    
+    function triggerLevel5Success() {
+        // Set current level to 5
+        currentLevel = 5;
+        
+        // Show success modal
+        const successModal = document.getElementById('successModal');
+        const successTitle = document.getElementById('successTitle');
+        const successMessage = document.getElementById('successMessage');
+        
+        successTitle.textContent = '🎉 Congratulations!';
+        successMessage.textContent = 'You\'ve successfully completed Level 5 using the cheat code!';
+        
+        successModal.style.display = 'flex';
+        
+        // Disable Level 5 button since it's completed
+        const level5Button = document.getElementById('level5-button');
+        if (level5Button) {
+            level5Button.disabled = true;
+            level5Button.textContent = 'Level 5 - Completed ✓';
+        }
+    }
+    
+    // Add Enter key support for cheat input
+    document.addEventListener('DOMContentLoaded', function() {
+        const cheatInput = document.getElementById('cheat-input');
+        if (cheatInput) {
+            cheatInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    activateCheatCode();
+                }
+            });
+        }
+    });
 
     // Make functions available globally
     window.scrambleCube = scrambleCube;
