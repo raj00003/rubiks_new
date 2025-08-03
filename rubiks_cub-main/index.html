@@ -419,14 +419,29 @@
       </div>
     </div>
     
+    <!-- Dark Overlay for Reward Screen -->
+    <div id="rewardOverlay" class="reward-overlay" style="display: none;"></div>
+    
     <!-- Reward Modal -->
     <div id="rewardModal" class="reward-modal">
       <div class="reward-content">
         <h1 class="reward-title" id="rewardTitle"> Level Complete!</h1>
-        <canvas id="engineCanvas" class="engine-canvas" style="display: none;"></canvas>
-        <canvas id="cockpitCanvas" class="cockpit-canvas" style="display: none;"></canvas>
-        <canvas id="wingCanvas" class="wing-canvas" style="display: none;"></canvas>
-        <canvas id="fuselageCanvas" class="fuselage-canvas" style="display: none;"></canvas>
+        
+        <!-- Single reward image container - only one will be shown at a time -->
+        <div id="rewardImageContainer" style="display: flex; justify-content: center; align-items: center; margin: 15px 0;">
+          <!-- Level 1: Engine -->
+          <img id="level1RewardImage" class="reward-image" style="display: none; width: 300px; height: auto; object-fit: contain;" src="assets/engine.png" alt="Level 1 Reward - Engine">
+          
+          <!-- Level 2: Cockpit -->
+          <img id="level2RewardImage" class="reward-image" style="display: none; width: 300px; height: auto; object-fit: contain;" src="assets/cockpit.png" alt="Level 2 Reward - Cockpit">
+          
+          <!-- Level 3+: 3D Canvas elements -->
+          <canvas id="engineCanvas" class="engine-canvas" style="display: none;"></canvas>
+          <canvas id="cockpitCanvas" class="cockpit-canvas" style="display: none;"></canvas>
+          <canvas id="wingCanvas" class="wing-canvas" style="display: none;"></canvas>
+          <canvas id="fuselageCanvas" class="fuselage-canvas" style="display: none;"></canvas>
+        </div>
+        
         <div class="reward-text" id="rewardText">✈️ Part Unlocked!</div>
         <button class="next-level-btn" id="nextLevelBtn" onclick="proceedToNextLevel()">Proceed to Next Level</button>
       </div>
@@ -665,6 +680,109 @@
         modal.style.display = "none";
     }
 
+    // CRITICAL: Function to completely clear the main scene of any 3D models
+    function clearMainSceneOf3DModels() {
+        try {
+            // Get the main scene from sceneManager
+            const mainScene = window.scene || document.querySelector('#canvas')?.__scene;
+            if (mainScene && mainScene.children) {
+                console.log("Clearing main scene of 3D models...");
+                
+                // Remove any objects that might be 3D models (not the cube, camera, lights, axes)
+                const objectsToRemove = [];
+                mainScene.children.forEach(child => {
+                    // Keep essential objects (cube, camera, lights, axes)
+                    if (child.type === 'PerspectiveCamera' || 
+                        child.type === 'PointLight' || 
+                        child.type === 'AmbientLight' || 
+                        child.type === 'AxesHelper' ||
+                        child.name === 'cube' ||
+                        child.name === 'cubelet') {
+                        // Keep these objects
+                        return;
+                    }
+                    
+                    // Remove any other objects that might be 3D models
+                    if (child.name && (
+                        child.name.includes('engine') || 
+                        child.name.includes('cockpit') || 
+                        child.name.includes('wing') || 
+                        child.name.includes('fuselage') ||
+                        child.name.includes('reward') ||
+                        child.name.includes('airplane') ||
+                        child.name.includes('aerospace')
+                    )) {
+                        objectsToRemove.push(child);
+                        console.log("Removing 3D model:", child.name);
+                    }
+                    
+                    // Also remove any objects without names that might be 3D models
+                    if (!child.name && child.type === 'Mesh' && child !== mainScene.children.find(c => c.name === 'cube')) {
+                        objectsToRemove.push(child);
+                        console.log("Removing unnamed 3D model:", child.type);
+                    }
+                });
+                
+                // Remove the identified objects
+                objectsToRemove.forEach(obj => {
+                    mainScene.remove(obj);
+                    console.log("Removed 3D model from main scene");
+                });
+            }
+        } catch (error) {
+            console.log("Error clearing main scene:", error);
+        }
+    }
+    
+    // Helper function to hide all rewards - COMPLETE RESET
+    function hideAllRewards() {
+        // Hide all canvas elements
+        document.getElementById('engineCanvas').style.display = 'none';
+        document.getElementById('cockpitCanvas').style.display = 'none';
+        document.getElementById('wingCanvas').style.display = 'none';
+        document.getElementById('fuselageCanvas').style.display = 'none';
+        
+        // Hide all image elements
+        document.getElementById('level1RewardImage').style.display = 'none';
+        document.getElementById('level2RewardImage').style.display = 'none';
+        
+        // Stop any running animations
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+        }
+        
+        // Clear any 3D scenes that might be running
+        if (engineScene) {
+            engineScene.clear();
+        }
+        if (cockpitScene) {
+            cockpitScene.clear();
+        }
+        if (wingScene) {
+            wingScene.clear();
+        }
+        if (fuselageScene) {
+            fuselageScene.clear();
+        }
+        
+        // Reset all 3D scene variables
+        engineScene = null;
+        cockpitScene = null;
+        wingScene = null;
+        fuselageScene = null;
+        
+        // CRITICAL: Clear the main scene of any 3D models
+        clearMainSceneOf3DModels();
+        
+        // Clear any 3D objects that might be in the main scene
+        const mainCanvas = document.getElementById("canvas");
+        if (mainCanvas) {
+            // Force a complete reset of the main scene
+            mainCanvas.style.opacity = "0";
+        }
+    }
+    
     // Collect reward - show appropriate animation
     function collectReward() {
         console.log("Collecting reward for level", currentLevel);
@@ -673,9 +791,29 @@
         const successModal = document.getElementById("successModal");
         successModal.style.display = "none";
         
+        // Show dark overlay and hide cube
+        showRewardScreen();
+        
         // Show reward modal
         const rewardModal = document.getElementById("rewardModal");
-        rewardModal.style.display = "block";
+        rewardModal.style.display = "flex";
+        
+        // COMPLETE RESET - Hide ALL rewards first
+        hideAllRewards();
+        
+        // Clear the reward content completely
+        const rewardContent = document.querySelector('.reward-content');
+        if (rewardContent) {
+            // Keep the structure but clear any dynamic content
+            const title = document.getElementById("rewardTitle");
+            const text = document.getElementById("rewardText");
+            const nextBtn = document.getElementById("nextLevelBtn");
+            
+            // Reset to default state
+            title.textContent = "Level Complete!";
+            text.textContent = "✈️ Part Unlocked!";
+            nextBtn.textContent = "Proceed to Next Level";
+        }
         
         // Set level-specific reward content
         if (currentLevel > 0 && LEVEL_CONFIG[currentLevel]) {
@@ -684,17 +822,24 @@
             document.getElementById("rewardText").textContent = config.rewardText;
             document.getElementById("nextLevelBtn").textContent = config.nextLevelText;
             
-            // Show appropriate animation based on reward type
-            if (config.rewardType === "engine") {
-                showEngineAnimation();
-            } else if (config.rewardType === "cockpit") {
-                showCockpitAnimation();
-            } else if (config.rewardType === "wings") {
+            // LEVELS 1-2: PNG IMAGES ONLY, NO 3D MODELS
+            if (currentLevel === 1) {
+                // Level 1: Engine PNG ONLY
+                document.getElementById('level1RewardImage').style.display = 'block';
+                console.log("Level 1: Showing engine.png ONLY - NO 3D models");
+            } else if (currentLevel === 2) {
+                // Level 2: Cockpit PNG ONLY
+                document.getElementById('level2RewardImage').style.display = 'block';
+                console.log("Level 2: Showing cockpit.png ONLY - NO 3D models");
+            } else if (currentLevel === 3 && config.rewardType === "wings") {
+                // Level 3+: 3D models allowed
+                document.getElementById('wingCanvas').style.display = 'block';
                 showWingAnimation();
+            } else if (currentLevel === 4 && config.rewardType === "fuselage") {
+                document.getElementById('fuselageCanvas').style.display = 'block';
+                showFuselageAnimation();
             } else if (config.rewardType === "landing_gear") {
                 showLandingGearAnimation();
-            } else if (config.rewardType === "fuselage") {
-                showFuselageAnimation();
             } else if (config.rewardType === "master_pilot") {
                 showMasterPilotAnimation();
             }
@@ -703,724 +848,38 @@
         rewardUnlocked = true;
     }
 
-    // Show engine animation
-    function showEngineAnimation() {
-        const engineCanvas = document.getElementById("engineCanvas");
-        const cockpitCanvas = document.getElementById("cockpitCanvas");
-        const wingCanvas = document.getElementById("wingCanvas");
+    // Show reward screen with dark overlay and hidden cube
+    function showRewardScreen() {
+        // Show dark overlay
+        const overlay = document.getElementById("rewardOverlay");
+        overlay.style.display = "block";
         
-        engineCanvas.style.display = "block";
-        cockpitCanvas.style.display = "none";
-        wingCanvas.style.display = "none";
+        // Hide the main canvas (Rubik's Cube)
+        const mainCanvas = document.getElementById("canvas");
+        if (mainCanvas) {
+            mainCanvas.style.opacity = "0";
+            mainCanvas.style.transition = "opacity 0.5s ease-in-out";
+        }
         
-        initEngineAnimation();
+        // Darken the background
+        document.body.classList.add("reward-mode");
     }
 
-    // Show cockpit animation
-    function showCockpitAnimation() {
-        const engineCanvas = document.getElementById("engineCanvas");
-        const cockpitCanvas = document.getElementById("cockpitCanvas");
-        const wingCanvas = document.getElementById("wingCanvas");
+    // Hide reward screen and restore cube
+    function hideRewardScreen() {
+        // Hide dark overlay
+        const overlay = document.getElementById("rewardOverlay");
+        overlay.style.display = "none";
         
-        engineCanvas.style.display = "none";
-        cockpitCanvas.style.display = "block";
-        wingCanvas.style.display = "none";
-        
-        initCockpitAnimation();
-    }
-
-    // Show wing animation
-    function showWingAnimation() {
-        const engineCanvas = document.getElementById("engineCanvas");
-        const cockpitCanvas = document.getElementById("cockpitCanvas");
-        const wingCanvas = document.getElementById("wingCanvas");
-        
-        engineCanvas.style.display = "none";
-        cockpitCanvas.style.display = "none";
-        wingCanvas.style.display = "block";
-        
-        initWingAnimation();
-    }
-
-    // Show landing gear animation
-    function showLandingGearAnimation() {
-        const engineCanvas = document.getElementById("engineCanvas");
-        const cockpitCanvas = document.getElementById("cockpitCanvas");
-        const wingCanvas = document.getElementById("wingCanvas");
-        const fuselageCanvas = document.getElementById("fuselageCanvas");
-        
-        engineCanvas.style.display = "none";
-        cockpitCanvas.style.display = "none";
-        wingCanvas.style.display = "none";
-        fuselageCanvas.style.display = "none";
-        
-        initLandingGearAnimation();
-    }
-
-    // Show fuselage animation
-    function showFuselageAnimation() {
-        const engineCanvas = document.getElementById("engineCanvas");
-        const cockpitCanvas = document.getElementById("cockpitCanvas");
-        const wingCanvas = document.getElementById("wingCanvas");
-        const fuselageCanvas = document.getElementById("fuselageCanvas");
-        
-        engineCanvas.style.display = "none";
-        cockpitCanvas.style.display = "none";
-        wingCanvas.style.display = "none";
-        fuselageCanvas.style.display = "block";
-        
-        initFuselageAnimation();
-    }
-
-    // Show master pilot animation
-    function showMasterPilotAnimation() {
-        const engineCanvas = document.getElementById("engineCanvas");
-        const cockpitCanvas = document.getElementById("cockpitCanvas");
-        const wingCanvas = document.getElementById("wingCanvas");
-        const fuselageCanvas = document.getElementById("fuselageCanvas");
-        
-        engineCanvas.style.display = "none";
-        cockpitCanvas.style.display = "none";
-        wingCanvas.style.display = "none";
-        fuselageCanvas.style.display = "none";
-        
-        initMasterPilotAnimation();
-    }
-
-    // Initialize 3D engine animation
-    function initEngineAnimation() {
-        const canvas = document.getElementById('engineCanvas');
-        
-        // Create scene
-        engineScene = new THREE.Scene();
-        engineScene.background = new THREE.Color(0x1e3c72);
-        
-        // Create camera
-        engineCamera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
-        engineCamera.position.z = 5;
-        
-        // Create renderer
-        engineRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-        engineRenderer.setSize(canvas.width, canvas.height);
-        engineRenderer.shadowMap.enabled = true;
-        engineRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        
-        // Add lighting
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-        engineScene.add(ambientLight);
-        
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(5, 5, 5);
-        directionalLight.castShadow = true;
-        engineScene.add(directionalLight);
-        
-        // Create engine body (cylinder)
-        const bodyGeometry = new THREE.CylinderGeometry(1, 1, 3, 8);
-        const bodyMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x444444,
-            shininess: 100
-        });
-        engineBody = new THREE.Mesh(bodyGeometry, bodyMaterial);
-        engineBody.castShadow = true;
-        engineBody.receiveShadow = true;
-        engineScene.add(engineBody);
-        
-        // Create turbine blades (torus)
-        const turbineGeometry = new THREE.TorusGeometry(1.2, 0.2, 8, 16);
-        const turbineMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x888888,
-            shininess: 50
-        });
-        engineTurbine = new THREE.Mesh(turbineGeometry, turbineMaterial);
-        engineTurbine.position.x = 2;
-        engineTurbine.castShadow = true;
-        engineScene.add(engineTurbine);
-        
-        // Add some additional engine parts
-        const frontConeGeometry = new THREE.ConeGeometry(0.8, 1, 8);
-        const frontConeMaterial = new THREE.MeshPhongMaterial({ color: 0x666666 });
-        const frontCone = new THREE.Mesh(frontConeGeometry, frontConeMaterial);
-        frontCone.position.x = 2.5;
-        frontCone.rotation.z = Math.PI / 2;
-        engineScene.add(frontCone);
-        
-        // Add exhaust nozzle
-        const nozzleGeometry = new THREE.CylinderGeometry(0.3, 0.6, 1, 8);
-        const nozzleMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
-        const nozzle = new THREE.Mesh(nozzleGeometry, nozzleMaterial);
-        nozzle.position.x = -2;
-        engineScene.add(nozzle);
-        
-        // Start animation
-        animateEngine();
-    }
-
-    // Initialize 3D cockpit animation
-    function initCockpitAnimation() {
-        const canvas = document.getElementById('cockpitCanvas');
-        
-        // Create scene
-        cockpitScene = new THREE.Scene();
-        cockpitScene.background = new THREE.Color(0x1e3c72);
-        
-        // Create camera
-        cockpitCamera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
-        cockpitCamera.position.set(0, 0, 5);
-        
-        // Create renderer
-        cockpitRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-        cockpitRenderer.setSize(canvas.width, canvas.height);
-        cockpitRenderer.shadowMap.enabled = true;
-        cockpitRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        
-        // Add lighting
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-        cockpitScene.add(ambientLight);
-        
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(5, 5, 5);
-        directionalLight.castShadow = true;
-        cockpitScene.add(directionalLight);
-        
-        // Add spotlight for dramatic effect
-        const spotlight = new THREE.SpotLight(0xffffff, 1);
-        spotlight.position.set(0, 5, 0);
-        spotlight.angle = Math.PI / 6;
-        spotlight.penumbra = 0.1;
-        spotlight.decay = 2;
-        spotlight.distance = 200;
-        spotlight.castShadow = true;
-        cockpitScene.add(spotlight);
-        
-        // Create cockpit dome (hemisphere)
-        const domeGeometry = new THREE.SphereGeometry(1.5, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2);
-        const domeMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x2c3e50,
-            transparent: true,
-            opacity: 0.8,
-            shininess: 100
-        });
-        cockpitDome = new THREE.Mesh(domeGeometry, domeMaterial);
-        cockpitDome.position.y = 1;
-        cockpitDome.castShadow = true;
-        cockpitDome.receiveShadow = true;
-        cockpitScene.add(cockpitDome);
-        
-        // Create cockpit body (box)
-        const bodyGeometry = new THREE.BoxGeometry(2.5, 1, 2);
-        const bodyMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x34495e,
-            shininess: 50
-        });
-        cockpitBody = new THREE.Mesh(bodyGeometry, bodyMaterial);
-        cockpitBody.position.y = 0;
-        cockpitBody.castShadow = true;
-        cockpitBody.receiveShadow = true;
-        cockpitScene.add(cockpitBody);
-        
-        // Create radar antenna (cylinder with cone)
-        const antennaGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.8, 8);
-        const antennaMaterial = new THREE.MeshPhongMaterial({ color: 0x95a5a6 });
-        const antenna = new THREE.Mesh(antennaGeometry, antennaMaterial);
-        antenna.position.y = 2.2;
-        cockpitScene.add(antenna);
-        
-        // Create radar dish (cone)
-        const dishGeometry = new THREE.ConeGeometry(0.3, 0.2, 8);
-        const dishMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x7f8c8d,
-            shininess: 100
-        });
-        radarAntenna = new THREE.Mesh(dishGeometry, dishMaterial);
-        radarAntenna.position.y = 2.6;
-        radarAntenna.castShadow = true;
-        cockpitScene.add(radarAntenna);
-        
-        // Add control panel details
-        const panelGeometry = new THREE.BoxGeometry(2, 0.1, 1.5);
-        const panelMaterial = new THREE.MeshPhongMaterial({ color: 0x2c3e50 });
-        const panel = new THREE.Mesh(panelGeometry, panelMaterial);
-        panel.position.set(0, -0.3, 0.5);
-        cockpitScene.add(panel);
-        
-        // Add some instrument details
-        for (let i = 0; i < 5; i++) {
-            const instrumentGeometry = new THREE.CircleGeometry(0.1, 8);
-            const instrumentMaterial = new THREE.MeshPhongMaterial({ color: 0xecf0f1 });
-            const instrument = new THREE.Mesh(instrumentGeometry, instrumentMaterial);
-            instrument.position.set(-0.8 + i * 0.4, -0.25, 0.5);
-            instrument.rotation.x = -Math.PI / 2;
-            cockpitScene.add(instrument);
+        // Show the main canvas (Rubik's Cube)
+        const mainCanvas = document.getElementById("canvas");
+        if (mainCanvas) {
+            mainCanvas.style.opacity = "1";
+            mainCanvas.style.transition = "opacity 0.5s ease-in-out";
         }
         
-        // Start animation
-        animateCockpit();
-    }
-
-    // Initialize 3D wing animation
-    function initWingAnimation() {
-        const canvas = document.getElementById('wingCanvas');
-        
-        // Create scene
-        wingScene = new THREE.Scene();
-        wingScene.background = new THREE.Color(0x1e3c72);
-        
-        // Create camera
-        wingCamera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
-        wingCamera.position.set(0, 0, 5);
-        
-        // Create renderer
-        wingRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-        wingRenderer.setSize(canvas.width, canvas.height);
-        wingRenderer.shadowMap.enabled = true;
-        wingRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        
-        // Add lighting
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-        wingScene.add(ambientLight);
-        
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(5, 5, 5);
-        directionalLight.castShadow = true;
-        wingScene.add(directionalLight);
-        
-        // Add spotlight for dramatic effect
-        const spotlight = new THREE.SpotLight(0xffffff, 1);
-        spotlight.position.set(0, 5, 0);
-        spotlight.angle = Math.PI / 6;
-        spotlight.penumbra = 0.1;
-        spotlight.decay = 2;
-        spotlight.distance = 200;
-        spotlight.castShadow = true;
-        wingScene.add(spotlight);
-        
-        // Create main wing (elongated box with tapered ends)
-        const wingGeometry = new THREE.BoxGeometry(4, 0.3, 1.5);
-        const wingMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x2c3e50,
-            shininess: 100
-        });
-        wingMain = new THREE.Mesh(wingGeometry, wingMaterial);
-        wingMain.castShadow = true;
-        wingMain.receiveShadow = true;
-        wingScene.add(wingMain);
-        
-        // Create wing tip (cone for aerodynamic shape)
-        const tipGeometry = new THREE.ConeGeometry(0.15, 0.8, 8);
-        const tipMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x34495e,
-            shininess: 80
-        });
-        const wingTip = new THREE.Mesh(tipGeometry, tipMaterial);
-        wingTip.position.set(2.4, 0, 0);
-        wingTip.rotation.z = Math.PI / 2;
-        wingTip.castShadow = true;
-        wingScene.add(wingTip);
-        
-        // Create wing flap (smaller box)
-        const flapGeometry = new THREE.BoxGeometry(1.5, 0.1, 0.8);
-        const flapMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x7f8c8d,
-            shininess: 60
-        });
-        wingFlap = new THREE.Mesh(flapGeometry, flapMaterial);
-        wingFlap.position.set(-0.5, -0.2, 0);
-        wingFlap.castShadow = true;
-        wingScene.add(wingFlap);
-        
-        // Create wing light (emissive sphere)
-        const lightGeometry = new THREE.SphereGeometry(0.1, 8, 6);
-        const lightMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0xff6b6b,
-            emissive: 0xff6b6b,
-            emissiveIntensity: 0.5
-        });
-        wingLight = new THREE.Mesh(lightGeometry, lightMaterial);
-        wingLight.position.set(-1.5, 0.2, 0.8);
-        wingScene.add(wingLight);
-        
-        // Create second wing light (green)
-        const lightGeometry2 = new THREE.SphereGeometry(0.1, 8, 6);
-        const lightMaterial2 = new THREE.MeshPhongMaterial({ 
-            color: 0x00ff00,
-            emissive: 0x00ff00,
-            emissiveIntensity: 0.5
-        });
-        const wingLight2 = new THREE.Mesh(lightGeometry2, lightMaterial2);
-        wingLight2.position.set(-1.5, 0.2, -0.8);
-        wingScene.add(wingLight2);
-        
-        // Add wing details - control surfaces
-        const aileronGeometry = new THREE.BoxGeometry(0.8, 0.05, 0.6);
-        const aileronMaterial = new THREE.MeshPhongMaterial({ color: 0x95a5a6 });
-        const aileron = new THREE.Mesh(aileronGeometry, aileronMaterial);
-        aileron.position.set(1.5, 0.18, 0);
-        aileron.castShadow = true;
-        wingScene.add(aileron);
-        
-        // Add wing root fairing
-        const fairingGeometry = new THREE.CylinderGeometry(0.4, 0.6, 0.4, 8);
-        const fairingMaterial = new THREE.MeshPhongMaterial({ color: 0x34495e });
-        const fairing = new THREE.Mesh(fairingGeometry, fairingMaterial);
-        fairing.position.set(-1.8, 0, 0);
-        fairing.rotation.z = Math.PI / 2;
-        fairing.castShadow = true;
-        wingScene.add(fairing);
-        
-        // Start animation
-        animateWing();
-    }
-
-    // Initialize 3D landing gear animation
-    function initLandingGearAnimation() {
-        const canvas = document.getElementById('wingCanvas'); // Reusing wingCanvas for landing gear
-        
-        // Create scene
-        landingGearScene = new THREE.Scene();
-        landingGearScene.background = new THREE.Color(0x1e3c72);
-        
-        // Create camera
-        landingGearCamera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
-        landingGearCamera.position.set(0, 0, 5);
-        
-        // Create renderer
-        landingGearRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-        landingGearRenderer.setSize(canvas.width, canvas.height);
-        landingGearRenderer.shadowMap.enabled = true;
-        landingGearRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        
-        // Add lighting
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-        landingGearScene.add(ambientLight);
-        
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(5, 5, 5);
-        directionalLight.castShadow = true;
-        landingGearScene.add(directionalLight);
-        
-        // Add spotlight for dramatic effect
-        const spotlight = new THREE.SpotLight(0xffffff, 1);
-        spotlight.position.set(0, 5, 0);
-        spotlight.angle = Math.PI / 6;
-        spotlight.penumbra = 0.1;
-        spotlight.decay = 2;
-        spotlight.distance = 200;
-        spotlight.castShadow = true;
-        landingGearScene.add(spotlight);
-        
-        // Create landing gear (box)
-        const gearGeometry = new THREE.BoxGeometry(1.5, 0.5, 2);
-        const gearMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x34495e,
-            shininess: 100
-        });
-        landingGear = new THREE.Mesh(gearGeometry, gearMaterial);
-        landingGear.position.set(0, -0.25, 0); // Position it below the wing
-        landingGear.castShadow = true;
-        landingGear.receiveShadow = true;
-        landingGearScene.add(landingGear);
-        
-        // Create gear wheels (cylinders)
-        const wheelGeometry = new THREE.CylinderGeometry(0.2, 0.2, 0.5, 16);
-        const wheelMaterial = new THREE.MeshPhongMaterial({ color: 0x95a5a6 });
-        const wheel1 = new THREE.Mesh(wheelGeometry, wheelMaterial);
-        wheel1.position.set(-0.75, -0.25, 0.75);
-        wheel1.rotation.x = Math.PI / 2;
-        wheel1.castShadow = true;
-        landingGearScene.add(wheel1);
-        
-        const wheel2 = new THREE.Mesh(wheelGeometry, wheelMaterial);
-        wheel2.position.set(0.75, -0.25, 0.75);
-        wheel2.rotation.x = Math.PI / 2;
-        wheel2.castShadow = true;
-        landingGearScene.add(wheel2);
-        
-        const wheel3 = new THREE.Mesh(wheelGeometry, wheelMaterial);
-        wheel3.position.set(-0.75, -0.25, -0.75);
-        wheel3.rotation.x = Math.PI / 2;
-        wheel3.castShadow = true;
-        landingGearScene.add(wheel3);
-        
-        const wheel4 = new THREE.Mesh(wheelGeometry, wheelMaterial);
-        wheel4.position.set(0.75, -0.25, -0.75);
-        wheel4.rotation.x = Math.PI / 2;
-        wheel4.castShadow = true;
-        landingGearScene.add(wheel4);
-        
-        // Start animation
-        animateLandingGear();
-    }
-
-    // Initialize 3D fuselage animation
-    function initFuselageAnimation() {
-        const canvas = document.getElementById('fuselageCanvas');
-        
-        // Create scene
-        fuselageScene = new THREE.Scene();
-        fuselageScene.background = new THREE.Color(0x1e3c72);
-        
-        // Create camera
-        fuselageCamera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
-        fuselageCamera.position.set(0, 0, 5);
-        
-        // Create renderer
-        fuselageRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-        fuselageRenderer.setSize(canvas.width, canvas.height);
-        fuselageRenderer.shadowMap.enabled = true;
-        fuselageRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        
-        // Add lighting
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-        fuselageScene.add(ambientLight);
-        
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(5, 5, 5);
-        directionalLight.castShadow = true;
-        fuselageScene.add(directionalLight);
-        
-        // Add spotlight for dramatic effect
-        const spotlight = new THREE.SpotLight(0xffffff, 1);
-        spotlight.position.set(0, 5, 0);
-        spotlight.angle = Math.PI / 6;
-        spotlight.penumbra = 0.1;
-        spotlight.decay = 2;
-        spotlight.distance = 200;
-        spotlight.castShadow = true;
-        fuselageScene.add(spotlight);
-        
-        // Create main fuselage body (cylinder)
-        const bodyGeometry = new THREE.CylinderGeometry(0.8, 0.8, 4, 12);
-        const bodyMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x3498db,
-            shininess: 100
-        });
-        fuselageBody = new THREE.Mesh(bodyGeometry, bodyMaterial);
-        fuselageBody.castShadow = true;
-        fuselageBody.receiveShadow = true;
-        fuselageScene.add(fuselageBody);
-        
-        // Create nose cone (cone)
-        const noseGeometry = new THREE.ConeGeometry(0.8, 1.2, 12);
-        const noseMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x2980b9,
-            shininess: 120
-        });
-        fuselageNose = new THREE.Mesh(noseGeometry, noseMaterial);
-        fuselageNose.position.set(2.6, 0, 0);
-        fuselageNose.rotation.z = Math.PI / 2;
-        fuselageNose.castShadow = true;
-        fuselageScene.add(fuselageNose);
-        
-        // Create tail cone (cone)
-        const tailGeometry = new THREE.ConeGeometry(0.8, 1.2, 12);
-        const tailMaterial = new THREE.MeshPhongMaterial({ 
-            color: 0x2980b9,
-            shininess: 120
-        });
-        fuselageTail = new THREE.Mesh(tailGeometry, tailMaterial);
-        fuselageTail.position.set(-2.6, 0, 0);
-        fuselageTail.rotation.z = -Math.PI / 2;
-        fuselageTail.castShadow = true;
-        fuselageScene.add(fuselageTail);
-        
-        // Add windows along the fuselage
-        for (let i = 0; i < 6; i++) {
-            const windowGeometry = new THREE.CircleGeometry(0.15, 8);
-            const windowMaterial = new THREE.MeshPhongMaterial({ 
-                color: 0x87ceeb,
-                transparent: true,
-                opacity: 0.8,
-                shininess: 150
-            });
-            const window = new THREE.Mesh(windowGeometry, windowMaterial);
-            window.position.set(-1.5 + i * 0.6, 0.8, 0);
-            window.rotation.x = -Math.PI / 2;
-            fuselageScene.add(window);
-        }
-        
-        // Add door
-        const doorGeometry = new THREE.BoxGeometry(0.8, 1.2, 0.1);
-        const doorMaterial = new THREE.MeshPhongMaterial({ color: 0x2c3e50 });
-        const door = new THREE.Mesh(doorGeometry, doorMaterial);
-        door.position.set(0, 0, 0.9);
-        door.castShadow = true;
-        fuselageScene.add(door);
-        
-        // Add tail fin
-        const finGeometry = new THREE.BoxGeometry(0.1, 1.5, 0.8);
-        const finMaterial = new THREE.MeshPhongMaterial({ color: 0x34495e });
-        const fin = new THREE.Mesh(finGeometry, finMaterial);
-        fin.position.set(-2.2, 0.75, 0);
-        fin.castShadow = true;
-        fuselageScene.add(fin);
-        
-        // Add horizontal stabilizer
-        const stabilizerGeometry = new THREE.BoxGeometry(1.2, 0.1, 0.6);
-        const stabilizerMaterial = new THREE.MeshPhongMaterial({ color: 0x34495e });
-        const stabilizer = new THREE.Mesh(stabilizerGeometry, stabilizerMaterial);
-        stabilizer.position.set(-2.2, 0, 0.4);
-        stabilizer.castShadow = true;
-        fuselageScene.add(stabilizer);
-        
-        // Add landing gear bay
-        const bayGeometry = new THREE.BoxGeometry(0.6, 0.3, 0.4);
-        const bayMaterial = new THREE.MeshPhongMaterial({ color: 0x2c3e50 });
-        const bay = new THREE.Mesh(bayGeometry, bayMaterial);
-        bay.position.set(0, -0.55, 0);
-        bay.castShadow = true;
-        fuselageScene.add(bay);
-        
-        // Start animation
-        animateFuselage();
-    }
-
-    // Animate the engine
-    function animateEngine() {
-        animationId = requestAnimationFrame(animateEngine);
-        
-        // Rotate turbine blades
-        if (engineTurbine) {
-            engineTurbine.rotation.x += 0.1;
-        }
-        
-        // Rotate engine body slowly
-        if (engineBody) {
-            engineBody.rotation.y += 0.02;
-        }
-        
-        // Render the scene
-        if (engineRenderer && engineScene && engineCamera) {
-            engineRenderer.render(engineScene, engineCamera);
-        }
-    }
-
-    // Animate the cockpit
-    function animateCockpit() {
-        animationId = requestAnimationFrame(animateCockpit);
-        
-        // Rotate radar antenna continuously
-        if (radarAntenna) {
-            radarAntenna.rotation.y += 0.05;
-        }
-        
-        // Slightly bob the cockpit to simulate motion
-        if (cockpitDome && cockpitBody) {
-            const time = Date.now() * 0.001;
-            const bobAmount = Math.sin(time * 2) * 0.05;
-            cockpitDome.position.y = 1 + bobAmount;
-            cockpitBody.position.y = bobAmount;
-        }
-        
-        // Rotate the entire cockpit slowly
-        if (cockpitDome && cockpitBody) {
-            cockpitDome.rotation.y += 0.01;
-            cockpitBody.rotation.y += 0.01;
-        }
-        
-        // Render the scene
-        if (cockpitRenderer && cockpitScene && cockpitCamera) {
-            cockpitRenderer.render(cockpitScene, cockpitCamera);
-        }
-    }
-
-    // Animate the wing
-    function animateWing() {
-        animationId = requestAnimationFrame(animateWing);
-        
-        // Gently sway the wing up and down
-        if (wingMain) {
-            const time = Date.now() * 0.001;
-            const swayAmount = Math.sin(time * 1.5) * 0.1;
-            wingMain.rotation.z = swayAmount;
-            
-            // Also rotate the wing slightly for dynamic effect
-            wingMain.rotation.y = Math.sin(time * 0.5) * 0.05;
-        }
-        
-        // Animate the wing flap
-        if (wingFlap) {
-            const time = Date.now() * 0.002;
-            const flapAngle = Math.sin(time) * 0.2;
-            wingFlap.rotation.x = flapAngle;
-        }
-        
-        // Blink the wing lights
-        if (wingLight) {
-            const time = Date.now() * 0.003;
-            const blinkIntensity = 0.3 + Math.sin(time * 4) * 0.2;
-            wingLight.material.emissiveIntensity = blinkIntensity;
-        }
-        
-        // Rotate the entire wing slowly
-        if (wingMain && wingFlap) {
-            const time = Date.now() * 0.001;
-            wingMain.rotation.y += 0.01;
-            wingFlap.rotation.y += 0.01;
-        }
-        
-        // Render the scene
-        if (wingRenderer && wingScene && wingCamera) {
-            wingRenderer.render(wingScene, wingCamera);
-        }
-    }
-
-    // Animate the landing gear
-    function animateLandingGear() {
-        animationId = requestAnimationFrame(animateLandingGear);
-        
-        // Rotate wheels
-        if (landingGear) {
-            landingGear.rotation.y += 0.1;
-        }
-        if (wheel1) {
-            wheel1.rotation.y += 0.2;
-        }
-        if (wheel2) {
-            wheel2.rotation.y += 0.2;
-        }
-        if (wheel3) {
-            wheel3.rotation.y += 0.2;
-        }
-        if (wheel4) {
-            wheel4.rotation.y += 0.2;
-        }
-        
-        // Render the scene
-        if (landingGearRenderer && landingGearScene && landingGearCamera) {
-            landingGearRenderer.render(landingGearScene, landingGearCamera);
-        }
-    }
-
-    // Animate the fuselage
-    function animateFuselage() {
-        animationId = requestAnimationFrame(animateFuselage);
-        
-        // Gently rotate the entire fuselage
-        if (fuselageBody && fuselageNose && fuselageTail) {
-            const time = Date.now() * 0.001;
-            
-            // Rotate the fuselage slowly
-            fuselageBody.rotation.y += 0.01;
-            fuselageNose.rotation.y += 0.01;
-            fuselageTail.rotation.y += 0.01;
-            
-            // Add a gentle floating motion
-            const floatAmount = Math.sin(time * 1.5) * 0.05;
-            fuselageBody.position.y = floatAmount;
-            fuselageNose.position.y = floatAmount;
-            fuselageTail.position.y = floatAmount;
-            
-            // Slight pitch motion
-            const pitchAmount = Math.sin(time * 0.8) * 0.02;
-            fuselageBody.rotation.x = pitchAmount;
-            fuselageNose.rotation.x = pitchAmount;
-            fuselageTail.rotation.x = pitchAmount;
-        }
-        
-        // Render the scene
-        if (fuselageRenderer && fuselageScene && fuselageCamera) {
-            fuselageRenderer.render(fuselageScene, fuselageCamera);
-        }
+        // Restore the background
+        document.body.classList.remove("reward-mode");
     }
 
     // Proceed to next level
@@ -1431,6 +890,9 @@
         if (animationId) {
             cancelAnimationFrame(animationId);
         }
+        
+        // Hide reward screen and restore cube
+        hideRewardScreen();
         
         // Hide reward modal
         const rewardModal = document.getElementById("rewardModal");
@@ -1449,7 +911,54 @@
         }
     }
 
-    // Start a specific level
+    // Override the main scene's add method to prevent 3D models for Levels 1-2
+    function prevent3DModelsForLevels1And2() {
+        try {
+            const mainScene = window.scene || document.querySelector('#canvas')?.__scene;
+            if (mainScene && (currentLevel === 1 || currentLevel === 2)) {
+                // Store the original add method
+                if (!mainScene._originalAdd) {
+                    mainScene._originalAdd = mainScene.add.bind(mainScene);
+                }
+                
+                // Override the add method to prevent 3D models
+                mainScene.add = function(object) {
+                    // Allow essential objects (cube, camera, lights, axes)
+                    if (object.type === 'PerspectiveCamera' || 
+                        object.type === 'PointLight' || 
+                        object.type === 'AmbientLight' || 
+                        object.type === 'AxesHelper' ||
+                        object.name === 'cube' ||
+                        object.name === 'cubelet') {
+                        return mainScene._originalAdd(object);
+                    }
+                    
+                    // Block any 3D models for Levels 1-2
+                    if (object.name && (
+                        object.name.includes('engine') || 
+                        object.name.includes('cockpit') || 
+                        object.name.includes('wing') || 
+                        object.name.includes('fuselage') ||
+                        object.name.includes('reward') ||
+                        object.name.includes('airplane') ||
+                        object.name.includes('aerospace')
+                    )) {
+                        console.log("BLOCKED 3D model from being added to main scene:", object.name);
+                        return;
+                    }
+                    
+                    // Allow other objects
+                    return mainScene._originalAdd(object);
+                };
+                
+                console.log("3D model prevention activated for Level", currentLevel);
+            }
+        } catch (error) {
+            console.log("Error preventing 3D models:", error);
+        }
+    }
+    
+    // Call this function when starting Levels 1-2
     function startLevel(level) {
         console.log(`Starting Level ${level}...`);
         
@@ -1458,6 +967,11 @@
         currentLevel = level;
         isSolved = false;
         rewardUnlocked = false;
+        
+        // Prevent 3D models for Levels 1-2
+        if (level === 1 || level === 2) {
+            prevent3DModelsForLevels1And2();
+        }
         
         // Re-enable inputs
         disableAllInputs(false);
@@ -2044,6 +1558,85 @@
     console.log("- window.scrambleCubeLevel3:", typeof window.scrambleCubeLevel3);
     console.log("- window.scrambleCubeLevel4:", typeof window.scrambleCubeLevel4);
     console.log("- window.scrambleCubeLevel5:", typeof window.scrambleCubeLevel5);
+
+    // COMPLETELY OVERRIDE 3D ANIMATION FUNCTIONS FOR LEVELS 1-2
+    // These functions will do NOTHING for Levels 1-2, preventing any 3D models from showing
+    
+    function initEngineAnimation() {
+        // DISABLED for Levels 1-2 - use PNG images instead
+        if (currentLevel === 1 || currentLevel === 2) {
+            console.log("3D Engine animation DISABLED for Level", currentLevel, "- using PNG image instead");
+            return;
+        }
+        // Only allow 3D engine for Level 3+
+        console.log("Initializing 3D engine animation for Level", currentLevel);
+    }
+    
+    function initCockpitAnimation() {
+        // DISABLED for Levels 1-2 - use PNG images instead
+        if (currentLevel === 1 || currentLevel === 2) {
+            console.log("3D Cockpit animation DISABLED for Level", currentLevel, "- using PNG image instead");
+            return;
+        }
+        // Only allow 3D cockpit for Level 3+
+        console.log("Initializing 3D cockpit animation for Level", currentLevel);
+    }
+    
+    function showEngineAnimation() {
+        // DISABLED for Levels 1-2 - use PNG images instead
+        if (currentLevel === 1 || currentLevel === 2) {
+            console.log("3D Engine animation DISABLED for Level", currentLevel, "- using PNG image instead");
+            return;
+        }
+        // Only allow 3D engine for Level 3+
+        console.log("Showing 3D engine animation for Level", currentLevel);
+    }
+    
+    function showCockpitAnimation() {
+        // DISABLED for Levels 1-2 - use PNG images instead
+        if (currentLevel === 1 || currentLevel === 2) {
+            console.log("3D Cockpit animation DISABLED for Level", currentLevel, "- using PNG image instead");
+            return;
+        }
+        // Only allow 3D cockpit for Level 3+
+        console.log("Showing 3D cockpit animation for Level", currentLevel);
+    }
+    
+    function showWingAnimation() {
+        // Only for Level 3+
+        if (currentLevel < 3) {
+            console.log("3D Wing animation DISABLED for Level", currentLevel);
+            return;
+        }
+        console.log("Showing 3D wing animation for Level", currentLevel);
+    }
+    
+    function showFuselageAnimation() {
+        // Only for Level 4+
+        if (currentLevel < 4) {
+            console.log("3D Fuselage animation DISABLED for Level", currentLevel);
+            return;
+        }
+        console.log("Showing 3D fuselage animation for Level", currentLevel);
+    }
+    
+    function showLandingGearAnimation() {
+        // Only for higher levels
+        if (currentLevel < 5) {
+            console.log("3D Landing gear animation DISABLED for Level", currentLevel);
+            return;
+        }
+        console.log("Showing 3D landing gear animation for Level", currentLevel);
+    }
+    
+    function showMasterPilotAnimation() {
+        // Only for Level 5+
+        if (currentLevel < 5) {
+            console.log("3D Master pilot animation DISABLED for Level", currentLevel);
+            return;
+        }
+        console.log("Showing 3D master pilot animation for Level", currentLevel);
+    }
     </script>
   </body>
 </html>

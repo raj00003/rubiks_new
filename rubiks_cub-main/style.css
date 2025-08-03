@@ -24,6 +24,7 @@ html, body {
     position: relative !important;
     overflow-x: hidden !important;
     z-index: 0 !important;
+    transition: background 0.5s ease-in-out !important;
 }
 
 /* Add animated stars effect for space-tech feel */
@@ -47,6 +48,7 @@ body::before {
     animation: twinkle 25s linear infinite;
     pointer-events: none;
     z-index: 1 !important;
+    transition: opacity 0.5s ease-in-out !important;
 }
 
 @keyframes twinkle {
@@ -71,6 +73,7 @@ body::after {
         transparent 70%);
     pointer-events: none;
     z-index: 2 !important;
+    transition: opacity 0.5s ease-in-out !important;
 }
 
 /* Typography with aerospace styling */
@@ -474,6 +477,21 @@ h3 {
     background: transparent !important;
 }
 
+/* NEW: Level 1 Reward Image Styling - Properly Sized */
+.level1-reward-image {
+    width: 300px !important; /* Set to 300px as requested */
+    height: auto !important; /* Maintain aspect ratio */
+    max-width: 100% !important; /* Ensure it doesn't overflow container */
+    object-fit: contain !important; /* Maintain aspect ratio */
+    object-position: center !important;
+    margin: 15px 0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important;
+    border: 2px solid rgba(59, 130, 246, 0.3) !important;
+    background: transparent !important;
+    display: block !important; /* Ensure proper display */
+}
+
 /* Reward text styling */
 .reward-text {
     font-size: 1.3em !important; /* Slightly smaller */
@@ -566,7 +584,7 @@ h3 {
         margin: 10px !important;
     }
     
-    #action-display {
+#action-display {
         font-size: 24px !important;
         padding: 10px 20px !important;
     }
@@ -575,11 +593,12 @@ h3 {
         font-size: 18px !important;
     }
     
-    /* Mobile responsive reward canvas */
+    /* Mobile responsive reward canvas and image */
     .engine-canvas,
     .cockpit-canvas,
     .wing-canvas,
-    .fuselage-canvas {
+    .fuselage-canvas,
+    .level1-reward-image {
         width: 240px !important;
         height: 160px !important;
     }
@@ -613,4 +632,107 @@ div {
 /* Ensure no solid backgrounds block the gradient */
 * {
     background-color: transparent !important;
+}
+
+/* Dark Overlay for Reward Screen */
+.reward-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 9998;
+    pointer-events: none;
+}
+
+/* Reward modal styling - ensure it's above overlay */
+.reward-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Higher than overlay */
+}
+
+.reward-content {
+    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+    padding: 30px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(59, 130, 246, 0.3);
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+    z-index: 10000; /* Highest z-index */
+}
+
+/* Level 1 Reward Image Styling - Proper Size */
+.level1-reward-image {
+    width: 300px !important;
+    height: auto !important;
+    margin: 15px 0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important;
+    border: 2px solid rgba(59, 130, 246, 0.3) !important;
+    background: transparent !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    display: block !important;
+}
+
+/* Enhanced reward text for dark mode */
+.reward-text {
+    font-size: 1.3em !important;
+    margin: 15px 0 !important;
+    text-shadow: 0 0 20px rgba(59, 130, 246, 0.8) !important;
+    font-weight: 600 !important;
+    color: #e2e8f0 !important;
+}
+
+/* Enhanced next level button for dark mode */
+.next-level-btn {
+    background: linear-gradient(45deg, #28a745, #20c997) !important;
+    border: none !important;
+    color: white !important;
+    padding: 12px 30px !important;
+    font-size: 1.1em !important;
+    border-radius: 25px !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    margin-top: 15px !important;
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4) !important;
+    font-weight: 600 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+}
+
+.next-level-btn:hover {
+    background: linear-gradient(45deg, #218838, #1ea085) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.6) !important;
+}
+
+/* Smooth transitions for cube visibility */
+#canvas {
+    transition: opacity 0.5s ease-in-out !important;
+}
+
+/* Level 2 Reward Image Styling - Cockpit */
+.level2-reward-image {
+    width: 300px !important;
+    height: auto !important;
+    margin: 15px 0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important;
+    border: 2px solid rgba(59, 130, 246, 0.3) !important;
+    background: transparent !important;
+    object-fit: contain !important;
+    object-position: center !important;
+    display: block !important;
 }
